@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MoonTech · Talent Relations Dashboard</title>
-<meta name="dashboard-version" content="TR-2026-08-31-meeting-simplified">
+<meta name="dashboard-version" content="TR-2026-09-01-meeting-simplified-fixed">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
@@ -1102,7 +1102,7 @@ body[data-theme="dark"] .seg button.on { background: var(--purple-bg-2); color: 
 <div class="nav-item" data-page="process">
       <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 00-5.4 5.4M9.3 17.7a4 4 0 005.4-5.4"></path><path d="M5 9V5h4M19 15v4h-4"></path></svg></span>
       <span class="nav-label">Improvements</span>
-      <span class="nav-count" id="nav-pi">0</span>
+      <span class="nav-count" id="nav-pi">6</span>
     </div>
   </nav>
 
@@ -2193,7 +2193,11 @@ function setPill(mode){
   else if(mode==='live'){ if(m) m.textContent='Live'; if(u) u.textContent=nowTime(); }
   else { if(m) m.textContent='Snapshot'; if(u) u.textContent=DATA.lastUpdated||''; }
 }
-function refreshNavCounts(){ $('#nav-fu').textContent = fmt(ALL.reduce((a,r)=>a+(+r.followUps||0),0)); $('#nav-pi').textContent = processList().length; }
+function refreshNavCounts(){
+  const fu=$('#nav-fu'), pi=$('#nav-pi');
+  if(fu) fu.textContent = fmt(ALL.reduce((a,r)=>a+(+r.followUps||0),0));
+  if(pi) pi.textContent = processList().length;
+}
 async function refreshLive(){
   const src = window.DATA_SOURCES || {};
   const btn = $('#refreshBtn');
