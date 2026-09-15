@@ -1040,6 +1040,15 @@ linear-gradient(135deg,rgba(62,39,141,.08),rgba(173,92,154,.035) 55%,rgba(255,14
 .impact-tile .i-title{font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.35}
 .impact-tile .i-copy{font-size:11px;line-height:1.5;color:var(--ink-3);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .impact-tile .i-meta{font-family:var(--font-mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-4);margin-top:10px}
+.overview-split{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:18px}
+.state-card{padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--bg-elev);box-shadow:var(--shadow-sm)}
+.state-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:8px}
+.state-head strong{font-family:var(--font-serif);font-size:19px;color:var(--ink)}
+.state-head span{font-family:var(--font-mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4)}
+.insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.insight-chip{padding:13px 14px;border:1px solid var(--line);border-radius:13px;background:var(--bg-elev-2)}
+.insight-chip b{display:block;font-family:var(--font-serif);font-size:24px;line-height:1;color:var(--purple);margin-bottom:5px}
+.insight-chip span{font-family:var(--font-mono);font-size:8px;line-height:1.35;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4)}
 
 .pulse.simple .pulse-bar{padding:16px 18px}
 .pulse.simple .pulse-summary{font-size:11.5px;line-height:1.55;color:var(--ink-3)}
@@ -1052,7 +1061,8 @@ linear-gradient(135deg,rgba(62,39,141,.08),rgba(173,92,154,.035) 55%,rgba(255,14
 .week-impact span{display:block;font-size:10px;line-height:1.45;color:var(--ink-3)}
 .week-impact em{display:block;margin-top:8px;font-family:var(--font-mono);font-size:8px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-4);font-style:normal}
 .team-week-first{margin-top:0!important}
-@media(max-width:1000px){.ov2-hero{grid-template-columns:1fr}.impact-strip{grid-template-columns:1fr}.pulse.simple .pulse-tiles{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1000px){.ov2-hero,.overview-split{grid-template-columns:1fr}.impact-strip{grid-template-columns:1fr}.pulse.simple .pulse-tiles{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.insight-grid{grid-template-columns:1fr}}
 </style>
 
 
@@ -1631,6 +1641,7 @@ function feed(rows, weeks=4){
 
 function renderOverview(){
   const rows = applyFilters(ALL);
+  const ownerLabel = state.filters.owner==='all' ? 'TR team' : state.filters.owner;
   const open = rows.filter(isOpenStatus);
   const needsAction = r=>r.status==='Blocked'||(r.dueDate && r.dueDate < _todayISO());
   const actionRequired = open.filter(needsAction);
@@ -1658,6 +1669,8 @@ function renderOverview(){
   const p=palette();
   const openArea=byKey(open,'area');
   const areaKeys=Object.keys(openArea).sort((a,b)=>openArea[b]-openArea[a]).slice(0,8);
+  const topArea = areaKeys[0] || '—';
+  const topAreaCount = topArea==='—' ? 0 : openArea[topArea];
 
   const impactCards = weeklyActivity.slice(0,4).map(r=>`<div class="impact-tile">
     <div class="i-top"><div class="i-title">${esc(r.title)}</div><span class="pill ${slug(r.status)}">${esc(r.status)}</span></div>
@@ -1665,18 +1678,22 @@ function renderOverview(){
     <div class="i-meta">${esc(r.owner)} · ${esc(r.area)} · ${r.date?dt(r.date):''}</div>
   </div>`).join('');
 
-  const dependencyHtml = dependencyRows.slice(0,6).map(r=>`<div class="risk-row">
-    <div style="width:8px;height:8px;border-radius:50%;background:${r.status==='Blocked'?'var(--coral)':'var(--amber)'};flex:0 0 auto"></div>
-    <div style="min-width:0;flex:1"><div class="t-title">${esc(r.title)}</div><div class="t-id">${esc(r.owner)} · ${esc(r.area)} · ${esc(r.caseId)}</div></div>
-    <span class="pill ${slug(r.status)}">${esc(r.status)}</span>
+  const actionHtml = actionRequired.slice(0,5).map(r=>`<div class="risk-row">
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--coral);flex:0 0 auto"></div>
+    <div style="min-width:0;flex:1"><div class="t-title">${esc(r.title)}</div><div class="t-id">${esc(r.owner)} · ${esc(r.caseId)}${r.dueDate?' · due '+dt(r.dueDate):''}</div></div>
+    <span class="pill ${slug(r.status==='Blocked'?'Blocked':'Overdue')}">${r.status==='Blocked'?'Blocked':'Overdue'}</span>
   </div>`).join('');
 
   $('#page-overview').innerHTML = `
     <div class="ov2-hero">
       <div class="ov2-main">
-        <div class="ov2-kicker">Talent Relations · management view</div>
-        <h1 class="ov2-title">TR delivery, <em>workload & impact</em></h1>
-        <div class="ov2-sub">Current workload across Fiola and Nivin, separating active execution from external dependencies and surfacing this week's delivery.</div>
+        <div class="ov2-kicker">${esc(ownerLabel)} · current management view</div>
+        <h1 class="ov2-title">${fmt(open.length)} open · <em>${fmt(actionRequired.length)} require action</em></h1>
+        <div class="insight-grid">
+          <div class="insight-chip"><b>${pct(activeOpen.length,open.length)}%</b><span>of open work actively moving</span></div>
+          <div class="insight-chip"><b>${fmt(waiting.length)}</b><span>external dependencies</span></div>
+          <div class="insight-chip"><b>${fmt(topAreaCount)}</b><span>open in ${esc(topArea)}</span></div>
+        </div>
       </div>
       <div class="ov2-side">
         <div class="ov2-stat"><span>Open portfolio</span><strong>${fmt(open.length)}</strong></div>
@@ -1696,17 +1713,20 @@ function renderOverview(){
     </div>
 
     <div class="section">
-      <div class="sec-head"><h2>This week's <em>impact</em></h2><span class="meta">${weekRangeLabel(wk)} · ${ACTIVITY_MODE==='activity-feed'?'live activity feed':ACTIVITY_MODE==='tracker-feed'?'live tracker outcomes':'verified impact snapshot'}</span></div>
-      ${impactCards?`<div class="impact-strip">${impactCards}</div>`:'<div class="card"><div class="empty">No weekly impact items recorded yet.</div></div>'}
+      <div class="sec-head"><h2>This week's <em>verified impact</em></h2><span class="meta">${weekRangeLabel(wk)} · ${ACTIVITY_MODE==='activity-feed'?'live activity feed':'activity feed unavailable'}</span></div>
+      ${impactCards?`<div class="impact-strip">${impactCards}</div>`:'<div class="card"><div class="empty">No verified Daily Activity entries are available for this period. Tracker status dates are not used as impact evidence.</div></div>'}
     </div>
 
-    <div class="grid g-13-1">
+    <div class="overview-split">
       <div class="card"><div class="card-head"><h3>Open workload by area</h3><span class="card-sub">${open.length} current cases</span></div><div class="chart-wrap" style="height:250px"><canvas id="cOpsOpenArea"></canvas></div></div>
-      <div class="card"><div class="card-head"><h3>Waiting / dependencies</h3><span class="card-sub">external dependency only</span></div>
-        ${dependencyHtml||'<div class="empty">No current cases waiting on an external dependency.</div>'}
+      <div class="state-card"><div class="state-head"><strong>Portfolio state</strong><span>${esc(ownerLabel)}</span></div>
+        <div class="chart-wrap" style="height:190px"><canvas id="cOpsState"></canvas></div>
+        <div class="card-head" style="margin-top:10px"><h3>Action required</h3><span class="card-sub">blocked or overdue</span></div>
+        ${actionHtml||'<div class="empty">No blocked or overdue work.</div>'}
       </div>
     </div>`;
   hbar('cOpsOpenArea',areaKeys,areaKeys.map(k=>openArea[k]),p.purple,{thick:10});
+  donut('cOpsState',['Active','Waiting','Action required'],[activeOpen.length,waiting.length,actionRequired.length],[p.success,p.amber,p.coral],open.length+' open');
 }
 
 // ============ WEEKLY PULSE (interactive) ============
@@ -2311,8 +2331,8 @@ async function loadFromScript(url){
       window.OPS_ACTIVITY = aRows.map(csvRowToActivity).filter(r=>r.date&&r.title);
       DAILY_ACTIVITY=window.OPS_ACTIVITY; ac=DAILY_ACTIVITY.length; ACTIVITY_MODE='activity-feed';
     }else if(fc || nc){
-      window.OPS_ACTIVITY = casesToActivity([...(data.fiola||[]), ...(data.nivin||[])]);
-      DAILY_ACTIVITY=window.OPS_ACTIVITY; ac=DAILY_ACTIVITY.length; ACTIVITY_MODE='tracker-feed';
+      window.OPS_ACTIVITY = [];
+      DAILY_ACTIVITY=[]; ACTIVITY_MODE='unavailable';
     }
     if(!fc && !nc && !pc && !ac) throw new Error('No recognizable tabs in the response.');
     data.lastUpdated = dubaiDateLabel();
